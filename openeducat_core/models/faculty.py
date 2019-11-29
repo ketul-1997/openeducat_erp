@@ -31,8 +31,10 @@ class OpFaculty(models.Model):
 
     partner_id = fields.Many2one('res.partner', 'Partner',
                                  required=True, ondelete="cascade")
-    middle_name = fields.Char('Middle Name', size=128)
-    last_name = fields.Char('Last Name', size=128, required=True)
+    first_name = fields.Char('First Name', size=128, required=True,
+                             translate=True)
+    middle_name = fields.Char('Middle Name', size=128,translate=True)
+    last_name = fields.Char('Last Name', size=128, required=True,translate=True)
     birth_date = fields.Date('Birth Date', required=True)
     blood_group = fields.Selection([
         ('A+', 'A+ve'),
@@ -61,6 +63,16 @@ class OpFaculty(models.Model):
                                            track_visibility='onchange')
     emp_id = fields.Many2one('hr.employee', 'HR Employee')
 
+    @api.onchange('first_name', 'middle_name', 'last_name')
+    def _onchange_name(self):
+        if not self.middle_name:
+            self.name = str(self.first_name) + \
+                        " " + str(self.last_name)
+        else:
+            self.name = str(self.first_name) + \
+                        " " + str(self.middle_name) + \
+                        " " + str(self.last_name)
+
     @api.multi
     @api.constrains('birth_date')
     def _check_birthdate(self):
@@ -73,8 +85,7 @@ class OpFaculty(models.Model):
     def create_employee(self):
         for record in self:
             vals = {
-                'name': record.name + ' ' + (record.middle_name or '') +
-                ' ' + record.last_name,
+                'name': record.name,
                 'country_id': record.nationality.id,
                 'gender': record.gender,
                 'address_home_id': record.partner_id.id
